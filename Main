@@ -1,0 +1,154 @@
+// Motor pins
+const int rightmotorpin1 = 10;
+const int rightmotorpin2 = 11;
+
+const int leftmotorpin1 = 8;
+const int leftmotorpin2 = 9;
+
+// Motor speed pins
+const int ENA = 13;
+const int ENB = 12;
+
+// Ultrasonic sensor pins
+const int trigPin = A5;
+const int echoPin = A4;
+float duration;
+float distance;
+
+// Line-follower pins
+const int lineFollower1 = A0;
+const int lineFollower2 = A1;
+
+// Motor velocity values
+int targetVelocity = 175;
+int collisionVelocity = 100;
+
+// Function declarations
+void moveForward(int speed);
+void moveBackward(int speed);
+void stopMotors();
+void turnLeft();
+void turnRight();
+
+// Setup
+void setup() {
+    // Set motor pins as outputs
+    pinMode(rightmotorpin1, OUTPUT);
+    pinMode(rightmotorpin2, OUTPUT);
+    pinMode(leftmotorpin1, OUTPUT);
+    pinMode(leftmotorpin2, OUTPUT);
+    pinMode(ENA, OUTPUT);
+    pinMode(ENB, OUTPUT);
+
+    // Set ultrasonic sensor pins
+    pinMode(trigPin, OUTPUT);
+    pinMode(echoPin, INPUT);
+
+    // Initialize serial communication
+    Serial.begin(9600);
+
+    // Stop the motors initially
+    stopMotors();
+}
+
+// Sensor and motor loop
+void loop() {
+    Serial.println("Beginning Movement");
+
+    // Line sensor values
+    int linefollowervalue1 = analogRead(lineFollower1);
+    int linefollowervalue2 = analogRead(lineFollower2);
+    Serial.print("Line follower 1: ");
+    Serial.println(linefollowervalue1);
+    Serial.print("Line follower 2: ");
+    Serial.println(linefollowervalue2);
+
+    // Ultrasonic distance measurement
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+    duration = pulseIn(echoPin, HIGH);
+    distance = duration * 0.0343 / 2;
+    Serial.print("Distance: ");
+    Serial.println(distance);
+
+    // Obstacle avoidance logic
+    if (distance > 0 && distance < 20) {
+        stopMotors();
+        delay(1000); // Wait for a moment after detecting the obstacle
+
+        // Maneuver logic
+        moveBackward(collisionVelocity);
+        delay(500);
+        turnLeft();
+        delay(300);
+        turnRight();
+        delay(300);
+        turnRight();
+        delay(300);
+        turnLeft();
+        delay(300);
+
+        stopMotors();
+    } else {
+        // Line-following logic
+        if (linefollowervalue1 > 1000 && linefollowervalue2 > 1000) {
+            moveForward(targetVelocity);
+        } else if (linefollowervalue1 > 1000 && linefollowervalue2 < 1000) {
+            turnRight();
+        } else if (linefollowervalue1 < 1000 && linefollowervalue2 > 1000) {
+            turnLeft();
+        } else {
+            stopMotors();
+        }
+    }
+}
+
+// Function definitions
+void moveForward(int speed) {
+    analogWrite(ENA, speed);
+    analogWrite(ENB, speed);
+    digitalWrite(rightmotorpin1, HIGH);
+    digitalWrite(rightmotorpin2, LOW);
+    digitalWrite(leftmotorpin1, HIGH);
+    digitalWrite(leftmotorpin2, LOW);
+    Serial.println("Motor moving forward");
+}
+
+void moveBackward(int speed) {
+    analogWrite(ENA, speed);
+    analogWrite(ENB, speed);
+    digitalWrite(rightmotorpin1, LOW);
+    digitalWrite(rightmotorpin2, HIGH);
+    digitalWrite(leftmotorpin1, LOW);
+    digitalWrite(leftmotorpin2, HIGH);
+    Serial.println("Motor moving backward");
+}
+
+void stopMotors() {
+    analogWrite(ENA, 0);
+    analogWrite(ENB, 0);
+    digitalWrite(rightmotorpin1, LOW);
+    digitalWrite(rightmotorpin2, LOW);
+    digitalWrite(leftmotorpin1, LOW);
+    digitalWrite(leftmotorpin2, LOW);
+    Serial.println("Motor stopped");
+}
+
+void turnLeft() {
+    digitalWrite(rightmotorpin1, HIGH);
+    digitalWrite(rightmotorpin2, LOW);
+    digitalWrite(leftmotorpin1, LOW);
+    digitalWrite(leftmotorpin2, HIGH);
+    Serial.println("Turning left");
+}
+
+void turnRight() {
+    digitalWrite(rightmotorpin1, LOW);
+    digitalWrite(rightmotorpin2, HIGH);
+    digitalWrite(leftmotorpin1, HIGH);
+    digitalWrite(leftmotorpin2, LOW);
+    Serial.println("Turning right");
+}
